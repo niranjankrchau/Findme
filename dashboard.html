@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Advertiser Dashboard</title>
+  <style>
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+      padding: 5px;
+    }
+    .expired { color: red; }
+    .active { color: green; }
+    .unpaid { color: gray; }
+    .highlight {
+      background-color: yellow;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Advertiser Dashboard</h2>
+
+  <div id="userInfo">
+    <h3>Your Info:</h3>
+    <p><strong>Name:</strong> <span id="name"></span></p>
+    <p><strong>Gender:</strong> <span id="gender"></span></p>
+    <p><strong>Mobile:</strong> <span id="mobile"></span></p>
+    <p><strong>Email:</strong> <span id="email"></span></p>
+  </div>
+
+  <h3>Add Profession Details</h3>
+  <form id="detailForm">
+    <label>Profession:</label>
+    <select id="profession">
+      <option>Doctor</option><option>Painter</option><option>Plumber</option>
+      <option>Electrician</option><option>Engineer</option><option>Mechanic</option>
+    </select><br />
+    <label>Work Experience (years):</label><input type="number" id="experience"><br />
+    <label>Address:</label><input type="text" id="address"><br />
+    <label>Pincode:</label><input type="text" id="pincode"><br />
+    <label>Landmark:</label><input type="text" id="landmark"><br />
+    <label>Home Service:</label>
+    <select id="homeservice">
+      <option>Yes</option><option>No</option>
+    </select><br /><br />
+	<label>Photo: <input type="file" id="photo" accept="image/*" onchange="encodeImageFileAsURL(this)" /></label>
+    <input type="hidden" id="photoData" />
+    <button type="button" onclick="addDetails()">Add</button>
+  </form>
+
+  <h3>Filter Listings</h3>
+  <label for="filterProfession">Profession:</label>
+  <select id="filterProfession" onchange="renderProfessionals()">
+    <option value="">All</option>
+    <option>Doctor</option><option>Painter</option><option>Plumber</option>
+    <option>Electrician</option><option>Engineer</option><option>Mechanic</option>
+  </select>
+  <label for="filterMobile">Mobile Number:</label>
+  <input type="text" id="filterMobile" placeholder="Enter mobile" oninput="renderProfessionals()" />
+
+  <label for="filterStatus">Status:</label>
+  <select id="filterStatus" onchange="renderProfessionals()">
+    <option value="">All</option>
+    <option value="active">Active</option>
+    <option value="expired">Expired</option>
+    <option value="unpaid">Unpaid</option>
+  </select>
+
+  <h3>✅ Active Listings</h3>
+  <table id="activeTable">
+    <tr>
+	   <th>Photo</th>
+      <th>First Name</th><th>Last Name</th><th>Gender</th><th>Mobile</th><th>Email</th>
+      <th>Profession</th><th>Experience</th><th>Address</th><th>Pincode</th>
+      <th>Landmark</th><th>Home Service</th><th>Validity</th><th>Action</th>
+    </tr>
+  </table>
+
+  <h3>❌ Expired / Unpaid Listings</h3>
+  <table id="expiredTable">
+    <tr>
+	  <th>Photo</th>
+      <th>First Name</th><th>Last Name</th><th>Gender</th><th>Mobile</th><th>Email</th>
+      <th>Profession</th><th>Experience</th><th>Address</th><th>Pincode</th>
+      <th>Landmark</th><th>Home Service</th><th>Validity</th><th>Action</th>
+    </tr>
+  </table>
+
+  <script>
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+      
+	  
+	  // Convert uploaded image file to base64 string
+     function encodeImageFileAsURL(element) {
+      const file = element.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+       reader.onloadend = function () {
+      document.getElementById('photoData').value = reader.result;
+       };
+    reader.readAsDataURL(file);
+  }
+	
+    const fname = getQueryParam("fname");
+    const lname = getQueryParam("lname");
+    const gender = getQueryParam("gender");
+    const mobile = getQueryParam("mobile");
+    const email = getQueryParam("email");
+
+    document.getElementById("name").innerText = fname + " " + lname;
+    document.getElementById("gender").innerText = gender;
+    document.getElementById("mobile").innerText = mobile;
+    document.getElementById("email").innerText = email;
+
+    function addDetails() {
+      const profession = document.getElementById("profession").value;
+      const experience = document.getElementById("experience").value.trim();
+      const address = document.getElementById("address").value.trim();
+      const pincode = document.getElementById("pincode").value.trim();
+      const landmark = document.getElementById("landmark").value.trim();
+      const homeservice = document.getElementById("homeservice").value;
+      const photoData = document.getElementById('photoData').value || "";
+      if (!experience || !address || !pincode || !landmark) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      const professionals = JSON.parse(localStorage.getItem("professionals")) || [];
+
+      const isDuplicate = professionals.some(pro => pro[3] === mobile && pro[5] === profession);
+      if (isDuplicate) {
+        alert("You already added this profession.");
+        return;
+      }
+
+      const data = [fname, lname, gender, mobile, email, profession, experience, address, pincode, landmark, homeservice, "Not Paid", photoData];
+      professionals.push(data);
+      localStorage.setItem("professionals", JSON.stringify(professionals));
+
+      const index = professionals.length - 1;
+      localStorage.setItem("currentProfessionalIndex", index);
+      window.location.href = "subscription.html";
+    }
+
+    function renderProfessionals() {
+      const professionals = JSON.parse(localStorage.getItem("professionals")) || [];
+      const today = new Date();
+
+      const activeTable = document.getElementById("activeTable");
+      const expiredTable = document.getElementById("expiredTable");
+
+      while (activeTable.rows.length > 1) activeTable.deleteRow(1);
+      while (expiredTable.rows.length > 1) expiredTable.deleteRow(1);
+
+      const professionFilter = document.getElementById("filterProfession")?.value || "";
+      const statusFilter = document.getElementById("filterStatus")?.value || "";
+	  const mobileFilter = document.getElementById("filterMobile")?.value.trim() || "";
+      const highlightIndex = parseInt(localStorage.getItem("recentlyRechargedIndex"));
+
+      professionals.forEach((data, index) => {
+        const validity = data[11];
+        const userProfession = data[5];
+        const userMobile = data[3];
+
+        let statusKey = "";
+        let table;
+        let statusHTML;
+
+        if (validity === "Not Paid") {
+          statusKey = "unpaid";
+          table = expiredTable;
+          statusHTML = `<span class="unpaid">Not Paid</span>`;
+        } else {
+          const expiryDate = new Date(validity);
+          const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+
+          if (daysLeft < 0) {
+            statusKey = "expired";
+            table = expiredTable;
+            statusHTML = `<span class="expired">Expired</span>`;
+          } else {
+            statusKey = "active";
+            table = activeTable;
+            statusHTML = `<span class="active">${validity}<br>(${daysLeft} day${daysLeft !== 1 ? "s" : ""} left)</span>`;
+          }
+        }
+
+        if (professionFilter && userProfession !== professionFilter) return;
+        if (statusFilter && statusKey !== statusFilter) return;
+		if (mobileFilter && !userMobile.includes(mobileFilter)) return;
+
+        const row = table.insertRow();
+        if (index === highlightIndex) row.classList.add("highlight");
+
+  // Insert photo cell first
+   const photoCell = row.insertCell();
+  if (data[12]) {
+  const img = document.createElement("img");
+  img.src = data[12];
+  img.alt = data[0] + " photo";
+  img.style.width = "50px";
+  img.style.height = "50px";
+  img.style.objectFit = "cover";
+  img.style.borderRadius = "50%";
+  photoCell.appendChild(img);
+} else {
+  photoCell.textContent = "No Photo";
+}
+
+// Now insert remaining fields
+data.forEach((val, i) => {
+  if (i === 12) return; // skip photo index
+  const cell = row.insertCell();
+  cell.innerHTML = i === 11 ? statusHTML : val;
+});
+
+        const actionCell = row.insertCell();
+        if (userMobile === mobile) {
+          let actions = `<button onclick="deleteProfessional(${index})">Delete</button>`;
+          if (statusKey === "unpaid" || statusKey === "expired") {
+            actions += ` <button onclick="recharge(${index})">Recharge</button>`;
+          }
+          actionCell.innerHTML = actions;
+        } else {
+          actionCell.innerHTML = "—";
+        }
+      });
+
+      localStorage.removeItem("recentlyRechargedIndex");
+	  
+      // Photo cell
+      const photoCell = document.createElement("td");
+      if (prof[12]) {
+        const img = document.createElement("img");
+        img.src = prof[12];
+        img.alt = prof[0] + " Photo";
+        img.classList.add("photo-thumb");
+        photoCell.appendChild(img);
+      } else {
+        photoCell.textContent = "No Photo";
+      }
+      row.appendChild(photoCell)
+    }
+
+    function deleteProfessional(index) {
+      let professionals = JSON.parse(localStorage.getItem("professionals")) || [];
+      professionals.splice(index, 1);
+      localStorage.setItem("professionals", JSON.stringify(professionals));
+      renderProfessionals();
+    }
+
+    function recharge(index) {
+      localStorage.setItem("currentProfessionalIndex", index);
+      window.location.href = "subscription.html";
+    }
+
+    window.onload = renderProfessionals;
+  </script>
+</body>
+</html>

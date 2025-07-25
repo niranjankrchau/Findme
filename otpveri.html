@@ -1,0 +1,51 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Signup with OTP</title></head><body>
+<h2>Signup</h2>
+<form id="signupForm">
+  <!-- fields... -->
+  <label>Email:<input id="email" name="email" type="email" required></label>
+  <button type="button" onclick="sendOtp()">Send OTP</button>
+</form>
+
+<div id="otpSection" style="display:none">
+  <h3>Enter OTP</h3>
+  <input id="otpInput" maxlength="6"><button onclick="verify()">Verify OTP</button>
+</div>
+
+<button id="continueBtn" style="display:none" onclick="completeSignup()">Proceed</button>
+
+<script>
+let serverOtp;
+async function sendOtp() {
+  const email = document.getElementById('email').value;
+  const res = await fetch('http://localhost:3000/send-otp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ email })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    serverOtp = data.otp;
+    alert('OTP sent — check your email!');
+    document.getElementById('otpSection').style.display = 'block';
+  } else {
+    alert(data.error);
+  }
+}
+
+function verify() {
+  const userOtp = document.getElementById('otpInput').value.trim();
+  if (userOtp === serverOtp) {
+    alert('OTP verified!');
+    document.getElementById('continueBtn').style.display = 'block';
+  } else {
+    alert('Incorrect OTP');
+  }
+}
+
+function completeSignup() {
+  const form = document.getElementById('signupForm');
+  const usp = new URLSearchParams(new FormData(form));
+  window.location = (form.usertype.value === 'advertiser' ? 'dashboard.html?' : 'viewer.html?') + usp;
+}
+</script>
+</body></html>

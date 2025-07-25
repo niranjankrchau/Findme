@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Viewer Page</title>
+  <style>
+    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
+    h3 { margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <h2>Welcome Viewer</h2>
+  
+  <div id="viewerInfo">
+    <h3>Your Info:</h3>
+    <p><strong>Name:</strong> <span id="vname"></span></p>
+    <p><strong>Gender:</strong> <span id="vgender"></span></p>
+    <p><strong>Mobile:</strong> <span id="vmobile"></span></p>
+    <p><strong>Email:</strong> <span id="vemail"></span></p>
+  </div>
+
+  <!-- Filters -->
+  <label>Filter by Name:</label>
+  <input type="text" id="filterName">
+  <label>Filter by Pincode:</label>
+  <input type="text" id="filterPin">
+  <label>Filter by Profession:</label>
+  <select id="filterProfession">
+    <option value="">All</option>
+    <option>Doctor</option>
+    <option>Painter</option>
+    <option>Plumber</option>
+    <option>Electrician</option>
+    <option>Engineer</option>
+    <option>Mechanic</option>
+  </select>
+  <button onclick="renderProfessionals()">Apply Filters</button>
+  <button onclick="clearFilters()">Clear Filters</button>
+  
+  <h3>Available Professionals</h3>
+  <table id="professionalTable">
+    <thead>    
+        <th>First Name</th><th>Last Name</th><th>Gender</th><th>Mobile</th><th>Email</th>
+        <th>Profession</th><th>Experience</th><th>Address</th><th>Pincode</th>
+        <th>Landmark</th><th>Home Service</th><th>Photo</th><tr>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // Helper: Get URL param
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param) || "N/A";
+    }
+
+    // Populate viewer info
+    const fname = getQueryParam("fname");
+    const lname = getQueryParam("lname");
+    const gender = getQueryParam("gender");
+    const mobile = getQueryParam("mobile");
+    const email = getQueryParam("email");
+
+    document.getElementById("vname").innerText = fname + " " + lname;
+    document.getElementById("vgender").innerText = gender;
+    document.getElementById("vmobile").innerText = mobile;
+    document.getElementById("vemail").innerText = email;
+
+    // Rendering with filters
+    function renderProfessionals() {
+      const tbody = document.querySelector("#professionalTable tbody");
+      tbody.innerHTML = "";
+
+      const professionals = JSON.parse(localStorage.getItem("professionals")) || [];
+      const today = new Date();
+
+      const nameFilter = document.getElementById("filterName").value.toLowerCase();
+      const pinFilter = document.getElementById("filterPin").value;
+      const professionFilter = document.getElementById("filterProfession").value;
+
+      professionals.forEach(pro => {
+        const validity = pro[11]; // index 11 = Validity
+        const expiryDate = new Date(validity);
+
+        if (validity !== "Not Paid" && expiryDate >= today) {
+          const fullName = (pro[0] + " " + pro[1]).toLowerCase();
+          const pincode = pro[8];
+          const profession = pro[5];
+
+          const matchName = fullName.includes(nameFilter);
+          const matchPin = pincode.includes(pinFilter);
+          const matchProfession = professionFilter === "" || profession === professionFilter;
+
+          if (matchName && matchPin && matchProfession) {
+            const row = tbody.insertRow();
+            for (let i = 0; i < 11; i++) {
+             row.insertCell().innerText = pro[i];
+            }
+
+            // Add photo cell (index 12)
+            const photoCell = row.insertCell();
+           if (pro[12]) {
+           const img = document.createElement("img");
+           img.src = pro[12];
+           img.alt = pro[0] + "'s photo";
+           img.style.width = "60px";
+           img.style.height = "60px";
+           img.style.objectFit = "cover";
+           img.style.borderRadius = "50%";
+           photoCell.appendChild(img);
+          } else {
+          photoCell.innerText = "No Photo";
+        }
+
+          }
+        }
+      });
+    }
+
+    // Initial load
+    renderProfessionals();
+	
+	//clear filter
+	function clearFilters() {
+     document.getElementById("filterName").value = "";
+     document.getElementById("filterPin").value = "";
+     document.getElementById("filterProfession").value = "";
+     renderProfessionals(); // Re-render full list
+     }
+
+  </script>
+</body>
+</html>

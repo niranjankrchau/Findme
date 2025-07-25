@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Signup with Email OTP</title>
+  <style>
+    label, input, select, button { display: block; margin: 10px 0; }
+    #otpSection, #proceedBtn { display: none; }
+  </style>
+</head>
+<body>
+  <h2>Signup</h2>
+
+  <form id="signupForm">
+    <label>User Type:</label>
+    <input type="radio" name="usertype" value="advertiser" required> Advertiser
+    <input type="radio" name="usertype" value="viewer"> Viewer
+
+    <label>First Name:</label><input type="text" name="fname" required>
+    <label>Last Name:</label><input type="text" name="lname" required>
+    <label>Gender:</label>
+    <select name="gender" required>
+      <option value="">Select</option>
+      <option>Male</option><option>Female</option><option>Other</option>
+    </select>
+    <label>Mobile:</label><input type="tel" name="mobile" required>
+    <label>Email:</label><input type="email" name="email" required>
+    <label>Password:</label><input type="password" name="password" required><br>
+
+    <button type="button" onclick="sendOtp()">Send OTP</button>
+  </form>
+
+  <div id="otpSection">
+    <label>Enter OTP sent to email:</label>
+    <input type="text" id="otpInput" maxlength="6">
+    <button onclick="verifyOtp()">Verify OTP</button>
+    <p><small>OTP expires in <span id="otpTimer">60</span> seconds</small></p>
+  </div>
+
+  <button id="proceedBtn" onclick="proceed()">Proceed to Dashboard</button>
+
+  <script>
+    let generatedOtp = "";
+    let countdown;
+
+    function sendOtp() {
+      const form = document.getElementById("signupForm");
+      const email = form.email.value.trim();
+
+      if (!email) return alert("Enter email before sending OTP.");
+
+      // Generate 6-digit OTP
+      generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      alert(`Mock OTP sent to ${email}: ${generatedOtp}`); // Replace with actual email logic in production
+
+      // Show OTP input section
+      document.getElementById("otpSection").style.display = "block";
+
+      // Start countdown timer
+      let time = 60;
+      document.getElementById("otpTimer").innerText = time;
+      countdown = setInterval(() => {
+        time--;
+        document.getElementById("otpTimer").innerText = time;
+        if (time <= 0) {
+          clearInterval(countdown);
+          alert("OTP expired. Please resend.");
+          location.reload();
+        }
+      }, 1000);
+    }
+
+    function verifyOtp() {
+      const userOtp = document.getElementById("otpInput").value.trim();
+      if (userOtp === generatedOtp) {
+        clearInterval(countdown);
+        alert("OTP Verified!");
+        document.getElementById("proceedBtn").style.display = "block";
+      } else {
+        alert("Incorrect OTP. Please try again.");
+      }
+    }
+
+    function proceed() {
+      const form = document.getElementById("signupForm");
+      const userType = form.usertype.value;
+      const fname = form.fname.value;
+      const lname = form.lname.value;
+      const gender = form.gender.value;
+      const mobile = form.mobile.value;
+      const email = form.email.value;
+
+      const target = userType === 'advertiser' ? 'dashboard.html' : 'viewer.html';
+      const params = `fname=${encodeURIComponent(fname)}&lname=${encodeURIComponent(lname)}&gender=${encodeURIComponent(gender)}&mobile=${encodeURIComponent(mobile)}&email=${encodeURIComponent(email)}`;
+
+      window.location.href = `${target}?${params}`;
+    }
+  </script>
+</body>
+</html>
